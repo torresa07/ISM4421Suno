@@ -5,30 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SunoStudio — AI Music Generator</title>
 <meta name="description" content="Generate songs with the Suno API. Bring your own API key.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b5cf6'/%3E%3Cstop offset='.6' stop-color='%23ec4899'/%3E%3Cstop offset='1' stop-color='%23f97316'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='13' fill='url(%23g)'/%3E%3Cg fill='%23fff'%3E%3Crect x='10' y='20' width='4' height='8' rx='2'/%3E%3Crect x='17' y='14' width='4' height='20' rx='2'/%3E%3Crect x='24' y='9' width='4' height='30' rx='2'/%3E%3Crect x='31' y='16' width='4' height='16' rx='2'/%3E%3Crect x='38' y='21' width='4' height='6' rx='2' opacity='.8'/%3E%3C/g%3E%3C/svg%3E">
+<script>
+  // Apply the saved theme before first paint (default: dark).
+  try { if (localStorage.getItem('sunostudio.theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch {}
+</script>
 <style>
   :root {
     --bg: #0d0f17; --panel: #161a26; --panel-2: #1d2232; --border: #2a3047;
     --text: #e8eaf2; --muted: #9aa1b9; --accent: #8b5cf6; --accent-2: #ec4899;
     --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; --radius: 14px;
+    --hover: #262c40; --inset: #131722; --glow-1: #2b1a52; --glow-2: #4a1238;
+    --ok-text: #86efac; --err-text: #fca5a5; --badge-text: #c4b5fd;
+    --ph-1: #3b2a6b; --ph-2: #5b1f47; --shadow: 0 1px 0 #ffffff08 inset;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5fc; --panel: #ffffff; --panel-2: #f3f0fa; --border: #e3ddf0;
+    --text: #1d1a2e; --muted: #6a6684; --accent: #7c3aed; --accent-2: #db2777;
+    --ok: #16a34a; --err: #dc2626;
+    --hover: #ebe5f7; --inset: #f8f6fd; --glow-1: #e6dbff; --glow-2: #ffdbea;
+    --ok-text: #15803d; --err-text: #b91c1c; --badge-text: #6d28d9;
+    --ph-1: #d9ccff; --ph-2: #ffc8e0; --shadow: 0 1px 3px #2a1b5512, 0 8px 24px #2a1b550a;
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: radial-gradient(1200px 600px at 10% -10%, #2b1a52 0%, transparent 60%),
-                radial-gradient(900px 500px at 110% 10%, #4a1238 0%, transparent 55%), var(--bg);
-    color: var(--text); min-height: 100vh; line-height: 1.5;
+    background: radial-gradient(1200px 600px at 10% -10%, var(--glow-1) 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%), var(--bg);
+    color: var(--text); min-height: 100vh; line-height: 1.5; transition: background-color .3s, color .3s;
   }
   a { color: var(--accent); }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
   .brand { display: flex; align-items: center; gap: 12px; }
-  .logo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
-          background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .logo { width: 48px; height: 48px; flex: 0 0 auto; filter: drop-shadow(0 6px 14px #ec489944); }
+  .logo .bar { transform-box: fill-box; transform-origin: center; }
+  body.playing .logo .bar { animation: eq 1s ease-in-out infinite alternate; }
+  body.playing .logo .bar:nth-child(2) { animation-delay: -.3s; }
+  body.playing .logo .bar:nth-child(3) { animation-delay: -.6s; }
+  body.playing .logo .bar:nth-child(4) { animation-delay: -.15s; }
+  body.playing .logo .bar:nth-child(5) { animation-delay: -.45s; }
+  @keyframes eq { from { transform: scaleY(.45); } to { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { body.playing .logo .bar { animation: none; } }
+  .wordmark { letter-spacing: -.02em; font-weight: 800; }
+  .wordmark .grad { background: linear-gradient(90deg, var(--accent), var(--accent-2) 70%, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hello { display: inline-flex; align-items: center; gap: 4px; }
+  .linkish { background: none; border: none; padding: 0 2px; color: var(--muted); font-size: .85rem; cursor: pointer; }
+  .linkish:hover:not(:disabled) { background: none; color: var(--accent); }
+  .head-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 999px; font-size: 1.05rem; }
+  dialog { border: 1px solid var(--border); border-radius: 18px; background: var(--panel); color: var(--text); padding: 28px 24px 22px; width: min(420px, calc(100vw - 32px)); text-align: center; box-shadow: 0 20px 60px #0006; }
+  dialog::backdrop { background: #0b0816aa; backdrop-filter: blur(4px); }
+  dialog h2 { justify-content: center; font-size: 1.3rem; margin: 12px 0 4px; }
+  dialog p { color: var(--muted); margin: 0 0 16px; font-size: .92rem; }
+  dialog .logo { width: 64px; height: 64px; margin: 0 auto; display: block; }
+  dialog .row { margin-top: 16px; }
   h1 { font-size: 1.4rem; margin: 0; }
   .sub { color: var(--muted); font-size: .9rem; margin: 0; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
   .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
   h2 { font-size: 1.05rem; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
@@ -37,7 +74,7 @@
     width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
     border-radius: 10px; padding: 10px 12px; font: inherit; outline: none;
   }
-  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #8b5cf633; }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
   textarea { resize: vertical; min-height: 90px; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .row > * { flex: 1 1 160px; }
@@ -47,19 +84,19 @@
     font: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
     padding: 10px 14px; border-radius: 10px; transition: transform .05s, background .2s;
   }
-  button:hover:not(:disabled) { background: #262c40; }
+  button:hover:not(:disabled) { background: var(--hover); }
   button:active:not(:disabled) { transform: translateY(1px); }
   button:disabled { opacity: .5; cursor: not-allowed; }
-  .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; font-weight: 600; }
+  .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; font-weight: 600; color: #fff; }
   .primary:hover:not(:disabled) { filter: brightness(1.1); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
   .big { width: 100%; padding: 14px; font-size: 1rem; margin-top: 18px; }
   .small { padding: 6px 10px; font-size: .8rem; }
   .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; gap: 4px; }
   .tabs button { flex: 1; border: none; background: transparent; padding: 8px; }
-  .tabs button.active { background: var(--accent); }
+  .tabs button.active { background: var(--accent); color: #fff; }
   .toggle { display: flex; align-items: center; gap: 10px; margin-top: 14px; cursor: pointer; user-select: none; color: var(--text); font-size: .9rem; }
   .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
-  details { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #131722; }
+  details { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--inset); }
   summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
   input[type=range] { width: 100%; accent-color: var(--accent); }
   .range-val { float: right; color: var(--text); }
@@ -69,24 +106,24 @@
   .keybar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .keybar input { flex: 1 1 260px; }
   .pill { font-size: .8rem; padding: 4px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
-  .pill.ok { color: var(--ok); border-color: #22c55e55; }
+  .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
   .note { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
   .status { display: none; margin-top: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font-size: .9rem; }
   .status.show { display: flex; gap: 10px; align-items: center; }
-  .status.err { border-color: #ef444466; color: #fca5a5; }
-  .status.ok { border-color: #22c55e66; color: #86efac; }
+  .status.err { border-color: color-mix(in srgb, var(--err) 40%, transparent); color: var(--err-text); }
+  .status.ok { border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok-text); }
   .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: 0 0 auto; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .songs { display: grid; gap: 14px; }
   .song { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-  .song img, .song .ph { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, #3b2a6b, #5b1f47); display: grid; place-items: center; font-size: 30px; }
+  .song img, .song .ph { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, var(--ph-1), var(--ph-2)); display: grid; place-items: center; font-size: 30px; }
   .song h3 { margin: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .meta { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .song audio { width: 100%; margin-top: 8px; height: 36px; }
   .song .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .song .lyrics { grid-column: 1 / -1; white-space: pre-wrap; font-size: .82rem; color: var(--muted); background: #131722; border-radius: 8px; padding: 10px; max-height: 220px; overflow: auto; display: none; }
+  .song .lyrics { grid-column: 1 / -1; white-space: pre-wrap; font-size: .82rem; color: var(--muted); background: var(--inset); border-radius: 8px; padding: 10px; max-height: 220px; overflow: auto; display: none; }
   .song .lyrics.show { display: block; }
-  .badge { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #8b5cf633; color: #c4b5fd; margin-left: 6px; vertical-align: middle; }
+  .badge { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--badge-text); margin-left: 6px; vertical-align: middle; }
   .empty { text-align: center; color: var(--muted); padding: 36px 12px; border: 1px dashed var(--border); border-radius: 12px; }
   .section-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 24px 0 12px; }
   .section-head h2 { margin: 0; }
@@ -98,14 +135,70 @@
 <div class="wrap">
   <header>
     <div class="brand">
-      <div class="logo" aria-hidden="true">🎵</div>
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="lg-h" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#8b5cf6"/><stop offset=".6" stop-color="#ec4899"/><stop offset="1" stop-color="#f97316"/>
+          </linearGradient>
+          <linearGradient id="gl-h" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="13" fill="url(#lg-h)"/>
+        <path d="M4 13a9 9 0 0 1 9-9h22a9 9 0 0 1 9 9v5C30 25 18 25 4 19z" fill="url(#gl-h)"/>
+        <g fill="#fff">
+          <rect class="bar" x="9.5" y="20" width="4" height="8" rx="2"/>
+          <rect class="bar" x="16.5" y="14" width="4" height="20" rx="2"/>
+          <rect class="bar" x="23.5" y="9" width="4" height="30" rx="2"/>
+          <rect class="bar" x="30.5" y="16" width="4" height="16" rx="2"/>
+          <rect class="bar" x="37.5" y="21" width="4" height="6" rx="2" opacity=".8"/>
+        </g>
+        <path d="M38 6l1 2.6L41.6 9.6 39 10.6 38 13.2 37 10.6 34.4 9.6 37 8.6z" fill="#fff" opacity=".9"/>
+      </svg>
       <div>
-        <h1>SunoStudio</h1>
-        <p class="sub">Turn ideas into full songs with the Suno API</p>
+        <h1 class="wordmark"><span id="brandName">Suno</span><span class="grad">Studio</span></h1>
+        <p class="sub hello"><span id="greeting">Turn ideas into full songs with the Suno API</span>
+          <button type="button" id="editName" class="linkish" title="Change your name" aria-label="Change your name">✎</button></p>
       </div>
     </div>
-    <span id="creditsPill" class="pill" title="Remaining Suno API credits">Credits: —</span>
+    <div class="head-actions">
+      <span id="creditsPill" class="pill" title="Remaining Suno API credits">Credits: —</span>
+      <button type="button" id="themeToggle" class="icon-btn" title="Switch to light theme" aria-label="Switch to light theme">☀️</button>
+    </div>
   </header>
+
+  <dialog id="welcome" aria-labelledby="welcomeTitle">
+    <form method="dialog" id="welcomeForm">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="lg-d" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#8b5cf6"/><stop offset=".6" stop-color="#ec4899"/><stop offset="1" stop-color="#f97316"/>
+          </linearGradient>
+          <linearGradient id="gl-d" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="13" fill="url(#lg-d)"/>
+        <path d="M4 13a9 9 0 0 1 9-9h22a9 9 0 0 1 9 9v5C30 25 18 25 4 19z" fill="url(#gl-d)"/>
+        <g fill="#fff">
+          <rect class="bar" x="9.5" y="20" width="4" height="8" rx="2"/>
+          <rect class="bar" x="16.5" y="14" width="4" height="20" rx="2"/>
+          <rect class="bar" x="23.5" y="9" width="4" height="30" rx="2"/>
+          <rect class="bar" x="30.5" y="16" width="4" height="16" rx="2"/>
+          <rect class="bar" x="37.5" y="21" width="4" height="6" rx="2" opacity=".8"/>
+        </g>
+        <path d="M38 6l1 2.6L41.6 9.6 39 10.6 38 13.2 37 10.6 34.4 9.6 37 8.6z" fill="#fff" opacity=".9"/>
+      </svg>
+      <h2 id="welcomeTitle">Welcome to the studio 🎤</h2>
+      <p>What should we call you? We'll put your name on the marquee. It's saved only on this device.</p>
+      <label for="visitorName" class="sr">Your name</label>
+      <input id="visitorName" type="text" maxlength="24" placeholder="Your first name" autocomplete="given-name">
+      <div class="row">
+        <button type="button" id="skipName">Skip</button>
+        <button type="submit" class="primary" id="saveName">Let's go 🎶</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- API key -->
   <section class="card" style="margin-bottom:20px">
@@ -229,6 +322,12 @@
   const POLL_MS = 5000;
   const MAX_POLL_MS = 10 * 60 * 1000;
   const HISTORY_KEY = 'sunostudio.history.v1';
+  const NAME_KEY = 'sunostudio.name';
+  const THEME_KEY = 'sunostudio.theme';
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } },
+  };
 
   // Character limits by model (per Suno API docs).
   const LIMITS = {
@@ -652,6 +751,48 @@
   els.clearHistory.addEventListener('click', () => {
     if (confirm('Remove all songs from your library on this device?')) { saveHistory([]); renderHistory(); }
   });
+
+  // ---- Theme (default dark; choice remembered on this device) ---------------
+  const themeBtn = $('themeToggle');
+  function applyTheme(t) {
+    if (t === 'light') document.documentElement.dataset.theme = 'light';
+    else delete document.documentElement.dataset.theme;
+    const next = t === 'light' ? 'dark' : 'light';
+    themeBtn.textContent = t === 'light' ? '🌙' : '☀️';
+    themeBtn.title = `Switch to ${next} theme`;
+    themeBtn.setAttribute('aria-label', `Switch to ${next} theme`);
+  }
+  themeBtn.addEventListener('click', () => {
+    const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    store.set(THEME_KEY, t); applyTheme(t);
+  });
+  applyTheme(store.get(THEME_KEY) === 'light' ? 'light' : 'dark');
+
+  // ---- Visitor name (asked once, saved on this device only) -----------------
+  const dlg = $('welcome'), nameInput = $('visitorName');
+  function applyName(name) {
+    $('brandName').textContent = name ? `${name}'s ` : 'Suno';
+    $('greeting').textContent = name ? `Hey ${name} — let's make your next hit` : 'Turn ideas into full songs with the Suno API';
+    document.title = name ? `${name}'s Studio — AI Music Generator` : 'SunoStudio — AI Music Generator';
+  }
+  function askName() {
+    nameInput.value = store.get(NAME_KEY) || '';
+    if (typeof dlg.showModal === 'function') { dlg.showModal(); nameInput.focus(); }
+  }
+  $('welcomeForm').addEventListener('submit', () => {
+    const name = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 24);
+    store.set(NAME_KEY, name); applyName(name);
+  });
+  $('skipName').addEventListener('click', () => { if (store.get(NAME_KEY) === null) store.set(NAME_KEY, ''); dlg.close(); });
+  $('editName').addEventListener('click', askName);
+  applyName(store.get(NAME_KEY) || '');
+  if (store.get(NAME_KEY) === null) askName();
+
+  // Animate the logo while any track is playing.
+  document.addEventListener('play', () => document.body.classList.add('playing'), true);
+  ['pause', 'ended'].forEach(ev => document.addEventListener(ev, () => {
+    if (![...document.querySelectorAll('audio')].some(a => !a.paused)) document.body.classList.remove('playing');
+  }, true));
 
   setMode('simple');
   updateInstrumental();

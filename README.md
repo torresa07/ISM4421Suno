@@ -14,6 +14,9 @@ No build step and no server-side secrets. Each user pastes **their own API key**
 - **Live progress**: polls `GET /api/v1/generate/record-info` and plays the stream preview as soon as it's ready, then swaps in the final MP3.
 - Two variations per request, with an audio player, a download button, lyrics, and a copy-link button for each.
 - **Library** of past songs saved on your device (song metadata only, never the key).
+- **Light / dark theme** toggle (starts dark; the choice is remembered on the device).
+- **Personal welcome**: visitors are asked their name once, and the header becomes "*Name*'s Studio". The name is saved only on that device and can be changed with the ✎ button.
+- Custom gradient **equalizer logo** (also used as the favicon). It animates while a track plays.
 
 ## Deploy to Netlify
 1. In Netlify choose **Add new site → Import from Git**, pick this repo, branch `main`.
