@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SunoStudio — AI Music Generator</title>
+<meta name="description" content="Generate songs with the Suno API. Bring your own API key.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+<style>
+  :root {
+    --bg: #0d0f17; --panel: #161a26; --panel-2: #1d2232; --border: #2a3047;
+    --text: #e8eaf2; --muted: #9aa1b9; --accent: #8b5cf6; --accent-2: #ec4899;
+    --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, #2b1a52 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, #4a1238 0%, transparent 55%), var(--bg);
+    color: var(--text); min-height: 100vh; line-height: 1.5;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
+          background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  h1 { font-size: 1.4rem; margin: 0; }
+  .sub { color: var(--muted); font-size: .9rem; margin: 0; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  h2 { font-size: 1.05rem; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin: 14px 0 6px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font: inherit; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #8b5cf633; }
+  textarea { resize: vertical; min-height: 90px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 1 1 160px; }
+  .counter { font-size: .75rem; color: var(--muted); text-align: right; margin-top: 4px; }
+  .counter.over { color: var(--err); }
+  button {
+    font: inherit; cursor: pointer; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; transition: transform .05s, background .2s;
+  }
+  button:hover:not(:disabled) { background: #262c40; }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; font-weight: 600; }
+  .primary:hover:not(:disabled) { filter: brightness(1.1); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .big { width: 100%; padding: 14px; font-size: 1rem; margin-top: 18px; }
+  .small { padding: 6px 10px; font-size: .8rem; }
+  .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; gap: 4px; }
+  .tabs button { flex: 1; border: none; background: transparent; padding: 8px; }
+  .tabs button.active { background: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 10px; margin-top: 14px; cursor: pointer; user-select: none; color: var(--text); font-size: .9rem; }
+  .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+  details { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: #131722; }
+  summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range-val { float: right; color: var(--text); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: .75rem; padding: 4px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border); cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  .keybar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .keybar input { flex: 1 1 260px; }
+  .pill { font-size: .8rem; padding: 4px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+  .pill.ok { color: var(--ok); border-color: #22c55e55; }
+  .note { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
+  .status { display: none; margin-top: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font-size: .9rem; }
+  .status.show { display: flex; gap: 10px; align-items: center; }
+  .status.err { border-color: #ef444466; color: #fca5a5; }
+  .status.ok { border-color: #22c55e66; color: #86efac; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex: 0 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .songs { display: grid; gap: 14px; }
+  .song { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .song img, .song .ph { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, #3b2a6b, #5b1f47); display: grid; place-items: center; font-size: 30px; }
+  .song h3 { margin: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .song audio { width: 100%; margin-top: 8px; height: 36px; }
+  .song .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .song .lyrics { grid-column: 1 / -1; white-space: pre-wrap; font-size: .82rem; color: var(--muted); background: #131722; border-radius: 8px; padding: 10px; max-height: 220px; overflow: auto; display: none; }
+  .song .lyrics.show { display: block; }
+  .badge { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #8b5cf633; color: #c4b5fd; margin-left: 6px; vertical-align: middle; }
+  .empty { text-align: center; color: var(--muted); padding: 36px 12px; border: 1px dashed var(--border); border-radius: 12px; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 24px 0 12px; }
+  .section-head h2 { margin: 0; }
+  footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: .8rem; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🎵</div>
+      <div>
+        <h1>SunoStudio</h1>
+        <p class="sub">Turn ideas into full songs with the Suno API</p>
+      </div>
+    </div>
+    <span id="creditsPill" class="pill" title="Remaining Suno API credits">Credits: —</span>
+  </header>
+
+  <!-- API key -->
+  <section class="card" style="margin-bottom:20px">
+    <h2>🔑 Your Suno API key</h2>
+    <div class="keybar">
+      <label for="apiKey" class="sr">API key</label>
+      <input id="apiKey" type="password" placeholder="Paste your key from sunoapi.org/api-key" autocomplete="off" spellcheck="false">
+      <button id="toggleKey" type="button" class="small">Show</button>
+      <button id="connectBtn" type="button">Connect</button>
+    </div>
+    <p class="note">Your key stays in this browser tab's memory only. It is never saved to storage, cookies, or any server, and is cleared when you close or refresh the page. Get a key at <a href="https://sunoapi.org/api-key" target="_blank" rel="noopener">sunoapi.org</a>.</p>
+  </section>
+
+  <div class="grid">
+    <!-- Create -->
+    <section class="card">
+      <h2>✨ Create a song</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" id="tabSimple" class="active" role="tab" aria-selected="true">Simple</button>
+        <button type="button" id="tabCustom" role="tab" aria-selected="false">Custom</button>
+      </div>
+
+      <form id="genForm" autocomplete="off">
+        <!-- Simple mode -->
+        <div id="simpleFields">
+          <label for="description">Describe your song</label>
+          <textarea id="description" maxlength="500" placeholder="An upbeat summer pop song about road-tripping with friends along the coast"></textarea>
+          <div class="counter" data-for="description"></div>
+          <div class="chips" id="ideaChips"></div>
+        </div>
+
+        <!-- Custom mode -->
+        <div id="customFields" hidden>
+          <label for="title">Title</label>
+          <input id="title" type="text" maxlength="80" placeholder="Midnight Drive">
+          <div class="counter" data-for="title"></div>
+
+          <label for="style">Style of music</label>
+          <input id="style" type="text" placeholder="synthwave, dreamy female vocals, 110 bpm">
+          <div class="counter" data-for="style"></div>
+          <div class="chips" id="styleChips"></div>
+
+          <div id="lyricsWrap">
+            <label for="lyrics" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Lyrics</span>
+              <button type="button" id="lyricsAiBtn" class="small">✍️ Write with AI</button>
+            </label>
+            <textarea id="lyrics" rows="9" placeholder="[Verse]&#10;Neon lights on the empty street...&#10;&#10;[Chorus]&#10;..."></textarea>
+            <div class="counter" data-for="lyrics"></div>
+          </div>
+        </div>
+
+        <label class="toggle"><input type="checkbox" id="instrumental"> Instrumental (no vocals)</label>
+
+        <div class="row">
+          <div>
+            <label for="model">Model</label>
+            <select id="model">
+              <option value="V5" selected>V5 — newest, best quality</option>
+              <option value="V4_5PLUS">V4.5+ — richer sound, up to 8 min</option>
+              <option value="V4_5">V4.5 — smart prompts, up to 8 min</option>
+              <option value="V4_5ALL">V4.5 All — better structure</option>
+              <option value="V4">V4 — improved vocals, up to 4 min</option>
+              <option value="V3_5">V3.5 — solid structure, up to 4 min</option>
+            </select>
+          </div>
+          <div id="genderWrap">
+            <label for="vocalGender">Vocal gender</label>
+            <select id="vocalGender">
+              <option value="">Auto</option>
+              <option value="f">Female</option>
+              <option value="m">Male</option>
+            </select>
+          </div>
+        </div>
+
+        <details id="advanced">
+          <summary>Advanced options</summary>
+          <label for="negativeTags">Exclude styles</label>
+          <input id="negativeTags" type="text" placeholder="heavy metal, screaming">
+          <label for="styleWeight">Style weight <span class="range-val" id="styleWeightVal">default</span></label>
+          <input id="styleWeight" type="range" min="0" max="1" step="0.05" value="0.65" data-touched="0">
+          <label for="weirdness">Creativity / weirdness <span class="range-val" id="weirdnessVal">default</span></label>
+          <input id="weirdness" type="range" min="0" max="1" step="0.05" value="0.5" data-touched="0">
+          <p class="note">Sliders only apply once you move them. Advanced options apply in Custom mode.</p>
+        </details>
+
+        <button id="generateBtn" class="primary big" type="submit">🎶 Generate music</button>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <!-- Results -->
+    <section class="card">
+      <h2>🎧 Latest results</h2>
+      <div id="results" class="songs">
+        <div class="empty">Your generated tracks will appear here.<br><small>Each request produces two variations. Streaming starts in ~30–60s; full downloads in 2–3 min.</small></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="section-head">
+    <h2>📚 Library</h2>
+    <button id="clearHistory" class="small" type="button">Clear library</button>
+  </div>
+  <div id="history" class="songs"></div>
+
+  <footer>Powered by the <a href="https://docs.sunoapi.org" target="_blank" rel="noopener">Suno API</a>. Generated audio links are hosted by Suno and expire after a period of time — download tracks you want to keep.</footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- Config ---------------------------------------------------------------
+  // On Netlify, /suno/* is proxied to https://api.sunoapi.org (see netlify.toml).
+  // Opening index.html directly (file://) falls back to calling the API directly.
+  const DIRECT_BASE = 'https://api.sunoapi.org';
+  let apiBase = location.protocol.startsWith('http') ? '/suno' : DIRECT_BASE;
+  const CALLBACK_URL = location.protocol.startsWith('http') ? location.origin + '/callback' : 'https://example.com/callback';
+  const POLL_MS = 5000;
+  const MAX_POLL_MS = 10 * 60 * 1000;
+  const HISTORY_KEY = 'sunostudio.history.v1';
+
+  // Character limits by model (per Suno API docs).
+  const LIMITS = {
+    simple: 500,
+    title: 80,
+    lyrics: m => (m === 'V3_5' || m === 'V4') ? 3000 : 5000,
+    style:  m => (m === 'V3_5' || m === 'V4') ? 200 : 1000,
+  };
+
+  const IDEAS = [
+    'A chill lo-fi hip hop beat for studying on a rainy afternoon',
+    'An epic orchestral trailer theme with soaring choir',
+    'A heartfelt acoustic ballad about coming home',
+    'An energetic EDM festival anthem with a huge drop',
+    'A smooth 90s R&B love song',
+    'A country song about a dog who loves pickup trucks',
+  ];
+  const STYLES = ['pop', 'rock', 'hip hop', 'lo-fi', 'EDM', 'jazz', 'country', 'R&B', 'synthwave', 'acoustic', 'orchestral', 'reggaeton'];
+
+  // ---- State (API key is held in memory only) -------------------------------
+  let apiKey = '';
+  let mode = 'simple';
+  let busy = false;
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    apiKey: $('apiKey'), toggleKey: $('toggleKey'), connectBtn: $('connectBtn'), credits: $('creditsPill'),
+    tabSimple: $('tabSimple'), tabCustom: $('tabCustom'), simpleFields: $('simpleFields'), customFields: $('customFields'),
+    description: $('description'), title: $('title'), style: $('style'), lyrics: $('lyrics'), lyricsWrap: $('lyricsWrap'),
+    instrumental: $('instrumental'), model: $('model'), vocalGender: $('vocalGender'), genderWrap: $('genderWrap'),
+    negativeTags: $('negativeTags'), styleWeight: $('styleWeight'), weirdness: $('weirdness'),
+    form: $('genForm'), generateBtn: $('generateBtn'), status: $('status'), results: $('results'),
+    history: $('history'), clearHistory: $('clearHistory'), lyricsAiBtn: $('lyricsAiBtn'),
+  };
+
+  // ---- API helpers ----------------------------------------------------------
+  async function api(path, { method = 'GET', body } = {}) {
+    if (!apiKey) throw new Error('Please enter your Suno API key first.');
+    const doFetch = base => fetch(base + path, {
+      method,
+      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    let res;
+    try {
+      res = await doFetch(apiBase);
+      // If the Netlify proxy isn't present (e.g. a plain static server), fall back to direct calls.
+      if (apiBase !== DIRECT_BASE && (res.status === 404 || res.status === 405) &&
+          !(res.headers.get('content-type') || '').includes('json')) {
+        apiBase = DIRECT_BASE;
+        res = await doFetch(apiBase);
+      }
+    } catch (e) {
+      throw new Error('Network error contacting the Suno API. Check your connection and try again.');
+    }
+    let json;
+    try { json = await res.json(); } catch { throw new Error(`Unexpected response from API (HTTP ${res.status}).`); }
+    if (json.code !== 200) throw new Error(friendlyError(json.code, json.msg));
+    return json.data;
+  }
+
+  function friendlyError(code, msg) {
+    const map = {
+      400: 'Invalid request — check your inputs.',
+      401: 'Unauthorized — your API key is invalid or missing.',
+      404: 'Endpoint or task not found.',
+      405: 'Rate limited — please slow down and try again shortly.',
+      413: 'Prompt or style is too long for the selected model.',
+      429: 'Insufficient credits — top up your Suno API account.',
+      430: 'Too many requests — please wait a moment.',
+      455: 'Suno is under maintenance. Try again later.',
+      500: 'Suno server error. Try again later.',
+    };
+    return (map[code] || 'Request failed.') + (msg && msg !== 'success' ? ` (${msg})` : '') + (code ? ` [${code}]` : '');
+  }
+
+  async function refreshCredits() {
+    try {
+      const credits = await api('/api/v1/generate/credit');
+      els.credits.textContent = `Credits: ${credits}`;
+      els.credits.classList.add('ok');
+      return true;
+    } catch (e) {
+      els.credits.textContent = 'Credits: —';
+      els.credits.classList.remove('ok');
+      throw e;
+    }
+  }
+
+  // ---- UI helpers -----------------------------------------------------------
+  function setStatus(text, type = 'loading') {
+    const s = els.status;
+    s.className = 'status show' + (type === 'err' ? ' err' : type === 'ok' ? ' ok' : '');
+    s.innerHTML = '';
+    if (type === 'loading') { const sp = document.createElement('div'); sp.className = 'spinner'; s.appendChild(sp); }
+    const t = document.createElement('span'); t.textContent = text; s.appendChild(t);
+  }
+  function clearStatus() { els.status.className = 'status'; els.status.textContent = ''; }
+
+  function setMode(m) {
+    mode = m;
+    els.tabSimple.classList.toggle('active', m === 'simple');
+    els.tabCustom.classList.toggle('active', m === 'custom');
+    els.tabSimple.setAttribute('aria-selected', m === 'simple');
+    els.tabCustom.setAttribute('aria-selected', m === 'custom');
+    els.simpleFields.hidden = m !== 'simple';
+    els.customFields.hidden = m !== 'custom';
+    updateCounters();
+  }
+
+  function updateInstrumental() {
+    const inst = els.instrumental.checked;
+    els.lyricsWrap.hidden = inst;
+    els.genderWrap.style.visibility = inst ? 'hidden' : 'visible';
+  }
+
+  function updateCounters() {
+    const m = els.model.value;
+    const lims = { description: LIMITS.simple, title: LIMITS.title, style: LIMITS.style(m), lyrics: LIMITS.lyrics(m) };
+    document.querySelectorAll('.counter').forEach(c => {
+      const id = c.dataset.for, len = els[id].value.length, max = lims[id];
+      c.textContent = `${len} / ${max}`;
+      c.classList.toggle('over', len > max);
+    });
+  }
+
+  function chip(text, onClick) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = text; b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function fmtDuration(sec) {
+    if (!sec && sec !== 0) return '';
+    const s = Math.round(sec); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  function safeUrl(u) {
+    try { const url = new URL(u); return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : ''; } catch { return ''; }
+  }
+
+  function renderSong(song, { pending = false } = {}) {
+    const card = document.createElement('div');
+    card.className = 'song';
+
+    const cover = safeUrl(song.imageUrl || song.sourceImageUrl);
+    if (cover) {
+      const img = document.createElement('img'); img.src = cover; img.alt = ''; img.loading = 'lazy'; card.appendChild(img);
+    } else {
+      const ph = document.createElement('div'); ph.className = 'ph'; ph.textContent = '🎵'; card.appendChild(ph);
+    }
+
+    const body = document.createElement('div');
+    const h = document.createElement('h3'); h.textContent = song.title || 'Untitled';
+    const audioUrl = safeUrl(song.audioUrl || song.sourceAudioUrl);
+    const streamUrl = safeUrl(song.streamAudioUrl || song.sourceStreamAudioUrl);
+    if (!audioUrl && streamUrl) { const b = document.createElement('span'); b.className = 'badge'; b.textContent = 'streaming'; h.appendChild(b); }
+    if (pending && !streamUrl && !audioUrl) { const b = document.createElement('span'); b.className = 'badge'; b.textContent = 'generating…'; h.appendChild(b); }
+    body.appendChild(h);
+
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.textContent = [song.tags, song.modelName, fmtDuration(song.duration)].filter(Boolean).join(' · ');
+    body.appendChild(meta);
+
+    const src = audioUrl || streamUrl;
+    if (src) {
+      const audio = document.createElement('audio'); audio.controls = true; audio.preload = 'none'; audio.src = src;
+      body.appendChild(audio);
+    }
+
+    const actions = document.createElement('div'); actions.className = 'actions';
+    if (audioUrl) {
+      const a = document.createElement('a'); a.href = audioUrl; a.target = '_blank'; a.rel = 'noopener';
+      a.download = (song.title || 'song') + '.mp3';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'small'; btn.textContent = '⬇ Download MP3';
+      a.appendChild(btn); actions.appendChild(a);
+    }
+    let lyricsEl = null;
+    if (song.prompt) {
+      lyricsEl = document.createElement('div'); lyricsEl.className = 'lyrics'; lyricsEl.textContent = song.prompt;
+      const lb = document.createElement('button'); lb.type = 'button'; lb.className = 'small'; lb.textContent = '📝 Lyrics';
+      lb.addEventListener('click', () => lyricsEl.classList.toggle('show'));
+      actions.appendChild(lb);
+    }
+    if (audioUrl || streamUrl) {
+      const cb = document.createElement('button'); cb.type = 'button'; cb.className = 'small'; cb.textContent = '🔗 Copy link';
+      cb.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(audioUrl || streamUrl); cb.textContent = '✓ Copied'; }
+        catch { cb.textContent = 'Copy failed'; }
+        setTimeout(() => (cb.textContent = '🔗 Copy link'), 1500);
+      });
+      actions.appendChild(cb);
+    }
+    body.appendChild(actions);
+    card.appendChild(body);
+    if (lyricsEl) card.appendChild(lyricsEl);
+    return card;
+  }
+
+  function renderResults(songs, pending) {
+    els.results.innerHTML = '';
+    if (!songs.length) {
+      const e = document.createElement('div'); e.className = 'empty';
+      e.textContent = pending ? 'Composing your track… this usually takes under a minute to start streaming.' : 'No tracks returned.';
+      els.results.appendChild(e);
+      return;
+    }
+    songs.forEach(s => els.results.appendChild(renderSong(s, { pending })));
+  }
+
+  // ---- Library (song metadata only; never the API key) ----------------------
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 50))); } catch { /* storage unavailable */ }
+  }
+  function addToHistory(songs) {
+    const list = loadHistory();
+    const ids = new Set(list.map(s => s.id));
+    const fields = ['id', 'title', 'tags', 'prompt', 'modelName', 'duration', 'audioUrl', 'streamAudioUrl', 'imageUrl', 'createTime'];
+    songs.slice().reverse().forEach(s => {
+      if (!s.id || ids.has(s.id)) return;
+      const slim = {}; fields.forEach(f => { if (s[f] != null) slim[f] = s[f]; });
+      list.unshift(slim);
+    });
+    saveHistory(list);
+    renderHistory();
+  }
+  function renderHistory() {
+    const list = loadHistory();
+    els.history.innerHTML = '';
+    if (!list.length) {
+      const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Finished songs are saved here on this device.';
+      els.history.appendChild(e);
+      return;
+    }
+    list.forEach(s => els.history.appendChild(renderSong(s)));
+  }
+
+  // ---- Generation flow ------------------------------------------------------
+  function buildPayload() {
+    const model = els.model.value;
+    const instrumental = els.instrumental.checked;
+    const p = { customMode: mode === 'custom', instrumental, model, callBackUrl: CALLBACK_URL };
+
+    if (mode === 'simple') {
+      const d = els.description.value.trim();
+      if (!d) throw new Error('Describe the song you want to create.');
+      if (d.length > LIMITS.simple) throw new Error(`Description must be ${LIMITS.simple} characters or fewer.`);
+      p.prompt = d;
+    } else {
+      const title = els.title.value.trim(), style = els.style.value.trim(), lyrics = els.lyrics.value.trim();
+      if (!title) throw new Error('Add a title for your song.');
+      if (!style) throw new Error('Add a style of music.');
+      if (!instrumental && !lyrics) throw new Error('Add lyrics, use "Write with AI", or switch on Instrumental.');
+      if (title.length > LIMITS.title) throw new Error(`Title must be ${LIMITS.title} characters or fewer.`);
+      if (style.length > LIMITS.style(model)) throw new Error(`Style must be ${LIMITS.style(model)} characters or fewer for ${model}.`);
+      if (lyrics.length > LIMITS.lyrics(model)) throw new Error(`Lyrics must be ${LIMITS.lyrics(model)} characters or fewer for ${model}.`);
+      p.title = title; p.style = style;
+      if (!instrumental) p.prompt = lyrics;
+
+      const neg = els.negativeTags.value.trim();
+      if (neg) p.negativeTags = neg;
+      if (els.styleWeight.dataset.touched === '1') p.styleWeight = Number(els.styleWeight.value);
+      if (els.weirdness.dataset.touched === '1') p.weirdnessConstraint = Number(els.weirdness.value);
+    }
+    if (!instrumental && els.vocalGender.value) p.vocalGender = els.vocalGender.value;
+    return p;
+  }
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const FAIL_STATES = {
+    CREATE_TASK_FAILED: 'Failed to create the task.',
+    GENERATE_AUDIO_FAILED: 'Audio generation failed.',
+    CALLBACK_EXCEPTION: 'Generation finished with a callback error.',
+    SENSITIVE_WORD_ERROR: 'Your prompt contains restricted content. Please rephrase it.',
+  };
+  const STATUS_TEXT = {
+    PENDING: 'Queued — warming up the band…',
+    TEXT_SUCCESS: 'Lyrics ready — composing the music…',
+    FIRST_SUCCESS: 'First track ready — finishing the second…',
+  };
+
+  async function pollTask(taskId) {
+    const start = Date.now();
+    while (Date.now() - start < MAX_POLL_MS) {
+      await sleep(POLL_MS);
+      let data;
+      try { data = await api('/api/v1/generate/record-info?taskId=' + encodeURIComponent(taskId)); }
+      catch (e) { setStatus('Checking status… (' + e.message + ')'); continue; }
+
+      const status = data && data.status;
+      const songs = (data && data.response && data.response.sunoData) || [];
+      if (FAIL_STATES[status]) throw new Error(FAIL_STATES[status] + (data.errorMessage ? ` ${data.errorMessage}` : ''));
+      if (status === 'SUCCESS') return songs;
+
+      const elapsed = Math.round((Date.now() - start) / 1000);
+      setStatus(`${STATUS_TEXT[status] || 'Working…'} (${elapsed}s)`);
+      renderResults(songs, true);
+    }
+    throw new Error('Timed out waiting for the song. It may still finish — check your Suno dashboard.');
+  }
+
+  async function onGenerate(e) {
+    e.preventDefault();
+    if (busy) return;
+    let payload;
+    try {
+      apiKey = els.apiKey.value.trim();
+      if (!apiKey) throw new Error('Please enter your Suno API key first.');
+      payload = buildPayload();
+    } catch (err) { setStatus(err.message, 'err'); return; }
+
+    busy = true; els.generateBtn.disabled = true; els.generateBtn.textContent = '⏳ Generating…';
+    setStatus('Submitting your request…');
+    renderResults([], true);
+    try {
+      const data = await api('/api/v1/generate', { method: 'POST', body: payload });
+      if (!data || !data.taskId) throw new Error('No task ID returned by the API.');
+      setStatus('Queued — warming up the band…');
+      const songs = await pollTask(data.taskId);
+      renderResults(songs, false);
+      addToHistory(songs);
+      setStatus(`Done! ${songs.length} track${songs.length === 1 ? '' : 's'} ready.`, 'ok');
+      refreshCredits().catch(() => {});
+    } catch (err) {
+      setStatus(err.message, 'err');
+      renderHistory();
+      if (!els.results.querySelector('.song')) {
+        els.results.innerHTML = '<div class="empty">Something went wrong. Adjust your request and try again.</div>';
+      }
+    } finally {
+      busy = false; els.generateBtn.disabled = false; els.generateBtn.textContent = '🎶 Generate music';
+    }
+  }
+
+  async function onWriteLyrics() {
+    apiKey = els.apiKey.value.trim();
+    if (!apiKey) { setStatus('Please enter your Suno API key first.', 'err'); return; }
+    const idea = window.prompt('What should the lyrics be about?', els.title.value || els.style.value || '');
+    if (!idea || !idea.trim()) return;
+    const btn = els.lyricsAiBtn;
+    btn.disabled = true; btn.textContent = '⏳ Writing…';
+    setStatus('Writing lyrics…');
+    try {
+      const data = await api('/api/v1/lyrics', { method: 'POST', body: { prompt: idea.trim().slice(0, 200), callBackUrl: CALLBACK_URL } });
+      const taskId = data && data.taskId;
+      if (!taskId) throw new Error('No task ID returned by the API.');
+      const start = Date.now();
+      while (Date.now() - start < 3 * 60 * 1000) {
+        await sleep(3000);
+        const info = await api('/api/v1/lyrics/record-info?taskId=' + encodeURIComponent(taskId));
+        const st = info && info.status;
+        if (FAIL_STATES[st]) throw new Error(FAIL_STATES[st] + (info.errorMessage ? ` ${info.errorMessage}` : ''));
+        const items = (info && info.response && info.response.data) || [];
+        const done = items.find(i => i && i.text);
+        if (st === 'SUCCESS' || done) {
+          if (!done) throw new Error('No lyrics returned.');
+          els.lyrics.value = done.text;
+          if (!els.title.value && done.title) els.title.value = done.title;
+          updateCounters();
+          setStatus('Lyrics added — edit them freely, then generate.', 'ok');
+          refreshCredits().catch(() => {});
+          return;
+        }
+      }
+      throw new Error('Timed out writing lyrics.');
+    } catch (err) {
+      setStatus(err.message, 'err');
+    } finally {
+      btn.disabled = false; btn.textContent = '✍️ Write with AI';
+    }
+  }
+
+  async function onConnect() {
+    apiKey = els.apiKey.value.trim();
+    if (!apiKey) { setStatus('Paste your API key to connect.', 'err'); return; }
+    els.connectBtn.disabled = true; els.connectBtn.textContent = 'Connecting…';
+    try {
+      await refreshCredits();
+      setStatus('Connected! You\'re ready to make music.', 'ok');
+      els.connectBtn.textContent = 'Connected ✓';
+    } catch (err) {
+      setStatus(err.message, 'err');
+      els.connectBtn.textContent = 'Connect';
+    } finally {
+      els.connectBtn.disabled = false;
+    }
+  }
+
+  // ---- Wire up --------------------------------------------------------------
+  IDEAS.forEach(i => $('ideaChips').appendChild(
+    chip(i.split(' ').slice(0, 4).join(' ') + '…', () => { els.description.value = i; updateCounters(); })));
+  STYLES.forEach(s => $('styleChips').appendChild(chip(s, () => {
+    const cur = els.style.value.trim();
+    els.style.value = cur ? (cur.toLowerCase().includes(s.toLowerCase()) ? cur : cur + ', ' + s) : s;
+    updateCounters();
+  })));
+
+  els.tabSimple.addEventListener('click', () => setMode('simple'));
+  els.tabCustom.addEventListener('click', () => setMode('custom'));
+  els.instrumental.addEventListener('change', updateInstrumental);
+  els.model.addEventListener('change', updateCounters);
+  ['description', 'title', 'style', 'lyrics'].forEach(id => els[id].addEventListener('input', updateCounters));
+  [['styleWeight', 'styleWeightVal'], ['weirdness', 'weirdnessVal']].forEach(([id, out]) => {
+    els[id].addEventListener('input', () => { els[id].dataset.touched = '1'; $(out).textContent = Number(els[id].value).toFixed(2); });
+  });
+  els.toggleKey.addEventListener('click', () => {
+    const show = els.apiKey.type === 'password';
+    els.apiKey.type = show ? 'text' : 'password';
+    els.toggleKey.textContent = show ? 'Hide' : 'Show';
+  });
+  els.connectBtn.addEventListener('click', onConnect);
+  els.apiKey.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); onConnect(); } });
+  els.apiKey.addEventListener('input', () => {
+    if (els.apiKey.value.trim() !== apiKey) { els.connectBtn.textContent = 'Connect'; }
+  });
+  els.form.addEventListener('submit', onGenerate);
+  els.lyricsAiBtn.addEventListener('click', onWriteLyrics);
+  els.clearHistory.addEventListener('click', () => {
+    if (confirm('Remove all songs from your library on this device?')) { saveHistory([]); renderHistory(); }
+  });
+
+  setMode('simple');
+  updateInstrumental();
+  renderHistory();
+})();
+</script>
+</body>
+</html>
