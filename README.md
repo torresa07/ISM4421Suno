@@ -4,6 +4,7 @@ A single-page AI music generator built on the [Suno API](https://docs.sunoapi.or
 No build step and no server-side secrets. Each user pastes **their own API key** when they open the page.
 
 ## Features
+- **Email login** with [Supabase Auth](https://supabase.com/docs/guides/auth/auth-email-passwordless): passwordless magic link, or an optional 6-digit code. The app is hidden until you sign in, and signing out clears the Suno key from the page.
 - **Bring your own key**: the key is held only in page memory. It is never written to localStorage, cookies, or any server, and it is gone when the page is refreshed.
 - **Credit balance** shown after you connect (`GET /api/v1/generate/credit`).
 - **Simple mode**: describe the song in plain English (up to 500 chars).
@@ -25,6 +26,17 @@ No build step and no server-side secrets. Each user pastes **their own API key**
 
 `netlify.toml` proxies `/suno/*` to `https://api.sunoapi.org/*` so browser requests are same-origin, which avoids CORS errors.
 The user's key passes through that proxy only in the `Authorization` header of each request and is never stored.
+
+## Email login setup (Supabase)
+The app uses the Supabase project `fbzcrdorydkqixohebvs`. Its URL and **publishable** key are in `index.html`. The publishable key is meant to be public and is not a secret.
+
+One-time dashboard setup, under **Authentication → URL Configuration**:
+- **Site URL**: `https://ism4421sunoas.netlify.app`
+- **Redirect URLs**: add `https://ism4421sunoas.netlify.app/**` and, for local testing, `http://localhost:8888/**`
+
+Optional:
+- **6-digit codes**: under **Authentication → Emails → Magic Link** (and **Confirm signup**), add `{{ .Token }}` to the template. Users can then type the code instead of clicking the link, which helps when work email scanners "click" links before the user does.
+- **Custom SMTP**: under **Authentication → Emails → SMTP Settings**. Supabase's built-in email sender is limited to a few emails per hour and is meant for testing. Set up your own SMTP (Resend, SendGrid, etc.) before real users arrive.
 
 ## Local development
 ```bash
