@@ -4,6 +4,7 @@ A single-page AI music generator built on the [Suno API](https://docs.sunoapi.or
 No build step and no server-side secrets. Each user pastes **their own API key** when they open the page.
 
 ## Features
+- **Google / GitHub sign-in**: each button appears automatically once that provider is enabled in Supabase.
 - **Email login** with [Supabase Auth](https://supabase.com/docs/guides/auth/auth-email-passwordless): passwordless magic link, or an optional 6-digit code. The app is hidden until you sign in, and signing out clears the Suno key from the page.
 - **Bring your own key**: the key is held only in page memory. It is never written to localStorage, cookies, or any server, and it is gone when the page is refreshed.
 - **Credit balance** shown after you connect (`GET /api/v1/generate/credit`).
@@ -37,6 +38,11 @@ One-time dashboard setup, under **Authentication → URL Configuration**:
 Optional:
 - **6-digit codes**: under **Authentication → Emails → Magic Link** (and **Confirm signup**), add `{{ .Token }}` to the template. Users can then type the code instead of clicking the link, which helps when work email scanners "click" links before the user does.
 - **Custom SMTP**: under **Authentication → Emails → SMTP Settings**. Supabase's built-in email sender is limited to a few emails per hour and is meant for testing. Set up your own SMTP (Resend, SendGrid, etc.) before real users arrive.
+
+## Google & GitHub sign-in setup
+Supabase callback URL for both providers: `https://fbzcrdorydkqixohebvs.supabase.co/auth/v1/callback`
+- **GitHub**: GitHub → Settings → Developer settings → OAuth Apps → New OAuth App. Set the homepage to `https://ism4421sunoas.netlify.app` and the callback to the URL above. Copy the Client ID, generate a Client Secret, and paste both into Supabase under **Authentication → Sign In / Providers → GitHub**.
+- **Google**: Google Cloud Console → APIs & Services → OAuth consent screen (External), then Credentials → Create OAuth client ID → Web application. Add `https://ism4421sunoas.netlify.app` as an authorized JavaScript origin and the URL above as an authorized redirect URI. Paste the Client ID and Secret into Supabase under **Authentication → Sign In / Providers → Google**.
 
 ## Database
 `supabase/migrations/20261010000000_create_profiles.sql` creates `public.profiles` (one row per user, keyed to `auth.users`). Row Level Security means each signed-in user can only read, create, and update **their own** profile. Anonymous visitors can't access the table, and the app can't delete profiles. To see everyone's profiles as the owner, open **Table Editor → profiles** in the Supabase dashboard.
