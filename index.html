@@ -63,6 +63,15 @@
   dialog .logo { width: 64px; height: 64px; margin: 0 auto; display: block; }
   dialog .row { margin-top: 16px; }
   .account { display: flex; align-items: center; gap: 6px; }
+  .profile { max-width: 560px; margin: 24px auto; }
+  .profile-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); padding: 24px 0; }
+  .profile-actions { margin-top: 18px; justify-content: flex-end; }
+  .profile-actions > * { flex: 0 1 auto; }
+  .profile-actions .primary { padding: 12px 22px; }
+  .profile-retry { text-align: center; margin-top: 12px; }
+  .req { color: var(--err); }
+  .opt { color: var(--muted); font-size: .8rem; }
+  .invalid { border-color: var(--err) !important; }
   .account .email { font-size: .8rem; color: var(--muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .auth { max-width: 440px; margin: 40px auto; text-align: center; padding: 32px 24px; }
   .auth .logo { width: 72px; height: 72px; margin: 0 auto 8px; display: block; }
@@ -175,61 +184,59 @@
       </svg>
       <div>
         <h1 class="wordmark"><span id="brandName">Suno</span><span class="grad">Studio</span></h1>
-        <p class="sub hello"><span id="greeting">Turn ideas into full songs with the Suno API</span>
-          <button type="button" id="editName" class="linkish" title="Change your name" aria-label="Change your name">✎</button></p>
+        <p class="sub"><span id="greeting">Turn ideas into full songs with the Suno API</span></p>
       </div>
     </div>
     <div class="head-actions">
       <span id="creditsPill" class="pill" hidden title="Remaining Suno API credits">Credits: —</span>
       <div id="account" class="account" hidden>
         <span id="accountEmail" class="email"></span>
+        <button type="button" id="profileBtn" class="small" title="View or edit your profile">👤 Profile</button>
         <button type="button" id="signOutBtn" class="small">Sign out</button>
       </div>
       <button type="button" id="themeToggle" class="icon-btn" title="Switch to light theme" aria-label="Switch to light theme">☀️</button>
     </div>
   </header>
 
-  <dialog id="welcome" aria-labelledby="welcomeTitle">
-    <form method="dialog" id="welcomeForm">
-      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id="lg-d" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#1e3a8a"/><stop offset=".5" stop-color="#2563eb"/><stop offset="1" stop-color="#38bdf8"/>
-          </linearGradient>
-          <linearGradient id="gr-d" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#0ea5e9"/>
-          </linearGradient>
-        </defs>
-        <rect width="64" height="64" rx="17" fill="url(#lg-d)"/>
-        <circle cx="32" cy="28" r="21" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="1"/>
-        <circle cx="32" cy="28" r="25.5" fill="none" stroke="#fff" stroke-opacity=".07" stroke-width="1"/>
-        <g class="wave" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2.4">
-          <path d="M15.5 19.5a14 14 0 0 0 0 15" opacity=".85"/>
-          <path d="M10 16a20 20 0 0 0 0 22" opacity=".45"/>
-          <path d="M48.5 19.5a14 14 0 0 1 0 15" opacity=".85"/>
-          <path d="M54 16a20 20 0 0 1 0 22" opacity=".45"/>
-        </g>
-        <rect x="23" y="9" width="18" height="27" rx="9" fill="#fff"/>
-        <g stroke="url(#gr-d)" stroke-linecap="round" stroke-width="1.8">
-          <path d="M27.5 15.5h9M26 19.5h12M26 23.5h12"/>
-        </g>
-        <path d="M26 28.5h12" stroke="url(#gr-d)" stroke-linecap="round" stroke-width="1.2" opacity=".55"/>
-        <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="3">
-          <path d="M18 27v1a14 14 0 0 0 28 0v-1"/>
-          <path d="M32 42.5v7M24.5 51h15"/>
-        </g>
-        <g fill="#fff" opacity=".95"><ellipse cx="48.4" cy="14.6" rx="2.7" ry="2.1" transform="rotate(-22 48.4 14.6)"/><path d="M50.4 14.2V5.2c.8 1.9 4.6 2.4 4.6 6.2" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></g>
-      </svg>
-      <h2 id="welcomeTitle">Welcome to the studio 🎤</h2>
-      <p>What should we call you? We'll put your name on the marquee. It's saved only on this device.</p>
-      <label for="visitorName" class="sr">Your name</label>
-      <input id="visitorName" type="text" maxlength="24" placeholder="Your first name" autocomplete="given-name">
-      <div class="row">
-        <button type="button" id="skipName">Skip</button>
-        <button type="submit" class="primary" id="saveName">Let's go 🎶</button>
+  <!-- Profile (stored in Supabase table public.profiles, protected by RLS) -->
+  <section id="profileView" class="card profile" hidden>
+    <div id="profileLoading" class="profile-loading"><div class="spinner"></div><span>Loading your profile…</span></div>
+    <form id="profileForm" novalidate hidden>
+      <h2 id="profileTitle">👤 Create your profile</h2>
+      <p id="profileIntro" class="note" style="margin-top:-6px">Tell us a little about yourself to start making music. Only you can see this information.</p>
+
+      <label for="pfName">Full name <span class="req">*</span></label>
+      <input id="pfName" type="text" maxlength="100" autocomplete="name" placeholder="Jane Doe" required>
+
+      <label for="pfAddress">Address <span class="req">*</span></label>
+      <textarea id="pfAddress" rows="3" maxlength="300" autocomplete="street-address" placeholder="Street, city, state, ZIP, country" required></textarea>
+
+      <label for="pfEmail">Email <span class="req">*</span></label>
+      <input id="pfEmail" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required>
+
+      <label for="pfUse">What will you use SunoStudio for? <span class="req">*</span></label>
+      <select id="pfUse" required>
+        <option value="">Choose one…</option>
+        <option value="personal">Personal fun &amp; hobby</option>
+        <option value="content_creation">Content creation (YouTube, TikTok, podcasts)</option>
+        <option value="music_production">Music production &amp; songwriting demos</option>
+        <option value="education">School, class, or learning</option>
+        <option value="business">Business or marketing</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label for="pfDetails">Tell us more <span id="pfDetailsReq" class="req" hidden>*</span><span id="pfDetailsOpt" class="opt">(optional)</span></label>
+      <textarea id="pfDetails" rows="3" maxlength="500" placeholder="e.g. Background music for my cooking videos"></textarea>
+      <div class="counter" id="pfDetailsCount">0 / 500</div>
+
+      <div class="row profile-actions">
+        <button type="button" id="profileCancel" hidden>Cancel</button>
+        <button type="submit" id="profileSave" class="primary">Save profile</button>
       </div>
     </form>
-  </dialog>
+    <div id="profileStatus" class="status" role="status" aria-live="polite"></div>
+    <div class="profile-retry" id="profileRetryWrap" hidden><button type="button" id="profileRetry">Try again</button></div>
+  </section>
 
   <!-- Email login (Supabase Auth, passwordless magic link) -->
   <section id="authGate" class="card auth" hidden>
@@ -417,7 +424,6 @@
   const SUPABASE_URL = 'https://fbzcrdorydkqixohebvs.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_GTgnN46ZTseMCh8NoCS01g_mTgLRmqd';
   const HISTORY_KEY = 'sunostudio.history.v1';
-  const NAME_KEY = 'sunostudio.name';
   const THEME_KEY = 'sunostudio.theme';
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -542,7 +548,7 @@
   function updateCounters() {
     const m = els.model.value;
     const lims = { description: LIMITS.simple, title: LIMITS.title, style: LIMITS.style(m), lyrics: LIMITS.lyrics(m) };
-    document.querySelectorAll('.counter').forEach(c => {
+    document.querySelectorAll('.counter[data-for]').forEach(c => {
       const id = c.dataset.for, len = els[id].value.length, max = lims[id];
       c.textContent = `${len} / ${max}`;
       c.classList.toggle('over', len > max);
@@ -863,24 +869,15 @@
   });
   applyTheme(store.get(THEME_KEY) === 'light' ? 'light' : 'dark');
 
-  // ---- Visitor name (asked once, saved on this device only) -----------------
-  const dlg = $('welcome'), nameInput = $('visitorName');
+  // ---- Header greeting (from the user's profile) ---------------------------
   function applyName(name) {
     $('brandName').textContent = name ? `${name}'s ` : 'Suno';
     $('greeting').textContent = name ? `Hey ${name} — let's make your next hit` : 'Turn ideas into full songs with the Suno API';
     document.title = name ? `${name}'s Studio — AI Music Generator` : 'SunoStudio — AI Music Generator';
   }
-  function askName() {
-    nameInput.value = store.get(NAME_KEY) || '';
-    if (typeof dlg.showModal === 'function') { dlg.showModal(); nameInput.focus(); }
-  }
-  $('welcomeForm').addEventListener('submit', () => {
-    const name = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 24);
-    store.set(NAME_KEY, name); applyName(name);
-  });
-  $('skipName').addEventListener('click', () => { if (store.get(NAME_KEY) === null) store.set(NAME_KEY, ''); dlg.close(); });
-  $('editName').addEventListener('click', askName);
-  applyName(store.get(NAME_KEY) || '');
+  const firstName = full => (full || '').trim().split(/\s+/)[0].slice(0, 24);
+  try { localStorage.removeItem('sunostudio.name'); } catch { /* old device-only name, now replaced by profiles */ }
+  applyName('');
 
   // ---- Email login (Supabase magic link / one-time code) --------------------
   const authEls = {
@@ -889,6 +886,124 @@
     status: $('authStatus'), account: $('account'), accountEmail: $('accountEmail'), main: $('appMain'),
   };
   let pendingEmail = '';
+  let currentUser = null;
+  let profile = null;
+
+  // ---- Profile (Supabase table public.profiles) -----------------------------
+  const pf = {
+    view: $('profileView'), loading: $('profileLoading'), form: $('profileForm'), title: $('profileTitle'), intro: $('profileIntro'),
+    name: $('pfName'), address: $('pfAddress'), email: $('pfEmail'), use: $('pfUse'), details: $('pfDetails'),
+    detailsReq: $('pfDetailsReq'), detailsOpt: $('pfDetailsOpt'), count: $('pfDetailsCount'),
+    save: $('profileSave'), cancel: $('profileCancel'), status: $('profileStatus'), retryWrap: $('profileRetryWrap'),
+  };
+
+  function profileStatus(text, type) {
+    const s = pf.status;
+    if (!text) { s.className = 'status'; s.textContent = ''; return; }
+    s.className = 'status show' + (type === 'err' ? ' err' : type === 'ok' ? ' ok' : '');
+    s.textContent = text;
+  }
+
+  function showView(which) {
+    authEls.gate.hidden = which !== 'auth';
+    pf.view.hidden = which !== 'profile';
+    authEls.main.hidden = which !== 'app';
+  }
+
+  function updateDetailsRequirement() {
+    const other = pf.use.value === 'other';
+    pf.detailsReq.hidden = !other; pf.detailsOpt.hidden = other;
+    pf.count.textContent = `${pf.details.value.length} / 500`;
+  }
+
+  function openProfileForm(mode) {
+    const p = profile || {};
+    pf.name.value = p.full_name || '';
+    pf.address.value = p.address || '';
+    pf.email.value = p.email || (currentUser && currentUser.email) || '';
+    pf.use.value = p.intended_use || '';
+    pf.details.value = p.use_details || '';
+    [pf.name, pf.address, pf.email, pf.use, pf.details].forEach(el => el.classList.remove('invalid'));
+    const editing = mode === 'edit';
+    pf.title.textContent = editing ? '👤 Your profile' : '👤 Create your profile';
+    pf.intro.textContent = editing
+      ? 'Update your details any time. Only you can see this information.'
+      : 'Tell us a little about yourself to start making music. Only you can see this information.';
+    pf.save.textContent = editing ? 'Save changes' : 'Save profile & start creating';
+    pf.cancel.hidden = !editing;
+    pf.loading.hidden = true; pf.form.hidden = false; pf.retryWrap.hidden = true;
+    profileStatus('');
+    updateDetailsRequirement();
+    showView('profile');
+    pf.name.focus();
+  }
+
+  function enterApp() {
+    applyName(firstName(profile && profile.full_name));
+    showView('app');
+  }
+
+  async function loadProfile() {
+    pf.loading.hidden = false; pf.form.hidden = true; pf.retryWrap.hidden = true; profileStatus('');
+    showView('profile');
+    const { data, error } = await sb.from('profiles')
+      .select('full_name, address, email, intended_use, use_details')
+      .eq('id', currentUser.id).maybeSingle();
+    if (error) {
+      pf.loading.hidden = true; pf.retryWrap.hidden = false;
+      profileStatus('Could not load your profile. Check your connection and try again.', 'err');
+      return;
+    }
+    profile = data;
+    if (profile) enterApp(); else openProfileForm('create');
+  }
+
+  function validateProfile() {
+    const v = {
+      full_name: pf.name.value.trim().replace(/\s+/g, ' '),
+      address: pf.address.value.trim(),
+      email: pf.email.value.trim().toLowerCase(),
+      intended_use: pf.use.value,
+      use_details: pf.details.value.trim() || null,
+    };
+    const problems = [];
+    const mark = (el, bad, msg) => { el.classList.toggle('invalid', bad); if (bad) problems.push(msg); };
+    mark(pf.name, !v.full_name, 'your full name');
+    mark(pf.address, !v.address, 'your address');
+    mark(pf.email, !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email), 'a valid email');
+    mark(pf.use, !v.intended_use, 'what you will use the app for');
+    mark(pf.details, v.intended_use === 'other' && !v.use_details, 'a short description of your use');
+    return { v, problems };
+  }
+
+  pf.use.addEventListener('change', updateDetailsRequirement);
+  pf.details.addEventListener('input', updateDetailsRequirement);
+  [pf.name, pf.address, pf.email, pf.use, pf.details].forEach(el =>
+    el.addEventListener('input', () => el.classList.remove('invalid')));
+
+  pf.form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const { v, problems } = validateProfile();
+    if (problems.length) { profileStatus('Please add ' + problems.join(', ') + '.', 'err'); return; }
+    pf.save.disabled = true; const label = pf.save.textContent; pf.save.textContent = 'Saving…';
+    profileStatus('');
+    try {
+      const { data, error } = await sb.from('profiles')
+        .upsert({ id: currentUser.id, ...v })
+        .select('full_name, address, email, intended_use, use_details').single();
+      if (error) throw error;
+      profile = data;
+      enterApp();
+      setStatus('Profile saved.', 'ok');
+    } catch (err) {
+      profileStatus('Could not save your profile: ' + ((err && err.message) || err), 'err');
+    } finally {
+      pf.save.disabled = false; pf.save.textContent = label;
+    }
+  });
+  pf.cancel.addEventListener('click', enterApp);
+  $('profileRetry').addEventListener('click', loadProfile);
+  $('profileBtn').addEventListener('click', () => openProfileForm('edit'));
 
   function authStatus(text, type) {
     const s = authEls.status;
@@ -898,28 +1013,29 @@
   }
 
   function showSignedIn(user) {
-    authEls.gate.hidden = true;
-    authEls.main.hidden = false;
     authEls.account.hidden = false;
     els.credits.hidden = false;
     authEls.accountEmail.textContent = user.email || '';
     authEls.accountEmail.title = user.email || '';
-    $('editName').hidden = false;
-    if (store.get(NAME_KEY) === null && !dlg.open) askName();
+    // Token refreshes re-fire this; only reload the profile when the user changes.
+    if (currentUser && currentUser.id === user.id) return;
+    currentUser = user;
+    profile = null;
+    loadProfile();
   }
 
   function showSignedOut() {
     // Forget the Suno key when the user signs out.
     apiKey = ''; els.apiKey.value = ''; els.credits.textContent = 'Credits: —'; els.credits.classList.remove('ok');
     els.connectBtn.textContent = 'Connect';
-    authEls.main.hidden = true;
+    currentUser = null;
+    profile = null;
+    applyName('');
+    showView('auth');
     authEls.account.hidden = true;
     els.credits.hidden = true;
-    authEls.gate.hidden = false;
-    $('editName').hidden = true;
     authEls.start.hidden = false;
     authEls.sent.hidden = true;
-    if (dlg.open) dlg.close();
   }
 
   function friendlyAuthError(err) {

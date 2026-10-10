@@ -16,7 +16,7 @@ No build step and no server-side secrets. Each user pastes **their own API key**
 - Two variations per request, with an audio player, a download button, lyrics, and a copy-link button for each.
 - **Library** of past songs saved on your device (song metadata only, never the key).
 - **Light / dark theme** toggle (starts dark; the choice is remembered on the device).
-- **Personal welcome**: visitors are asked their name once, and the header becomes "*Name*'s Studio". The name is saved only on that device and can be changed with the ✎ button.
+- **User profiles**: after first sign-in, each user must fill in their full name, address, email, and what they'll use the app for (with optional details, required for "Other"). The profile is stored in Supabase, can be edited from the **👤 Profile** button, and the header greets them as "*First name*'s Studio".
 - Custom **studio-microphone logo** with sound waves and a music note (also used as the favicon). The sound waves pulse while a track plays.
 
 ## Deploy to Netlify
@@ -37,6 +37,9 @@ One-time dashboard setup, under **Authentication → URL Configuration**:
 Optional:
 - **6-digit codes**: under **Authentication → Emails → Magic Link** (and **Confirm signup**), add `{{ .Token }}` to the template. Users can then type the code instead of clicking the link, which helps when work email scanners "click" links before the user does.
 - **Custom SMTP**: under **Authentication → Emails → SMTP Settings**. Supabase's built-in email sender is limited to a few emails per hour and is meant for testing. Set up your own SMTP (Resend, SendGrid, etc.) before real users arrive.
+
+## Database
+`supabase/migrations/20261010000000_create_profiles.sql` creates `public.profiles` (one row per user, keyed to `auth.users`). Row Level Security means each signed-in user can only read, create, and update **their own** profile. Anonymous visitors can't access the table, and the app can't delete profiles. To see everyone's profiles as the owner, open **Table Editor → profiles** in the Supabase dashboard.
 
 ## Local development
 ```bash
